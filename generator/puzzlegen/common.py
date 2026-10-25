@@ -9,7 +9,7 @@ WIDTH, HEIGHT = 600, 800
 MARGIN = 30
 BLACK, DARK, LIGHT, WHITE = 0, 90, 200, 255
 
-CONTROLS = "< >  puzzle     ^ v  type     OK  answer     Back  exit"
+CONTROLS = "< >  puzzle day      ^ v  puzzle type      OK  answer"
 
 _FONTS = {
     False: ["DejaVuSans.ttf", "arial.ttf", "Arial.ttf", "LiberationSans-Regular.ttf",

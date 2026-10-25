@@ -19,7 +19,8 @@ KEYS_PREV="109 193 105"     # page back (both sides), 5-way left
 KEYS_TYPE_NEXT="108"        # 5-way down
 KEYS_TYPE_PREV="103"        # 5-way up
 KEYS_ANSWER="194"           # 5-way centre
-KEYS_EXIT="158 102"         # back, home
+KEYS_BACK="158"             # back: previous screen
+KEYS_EXIT="102"             # home: leave Puzzler
 
 EXT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PUZZLES="$EXT_DIR/puzzles"
@@ -332,8 +333,27 @@ render() {
 	show "$IMG"
 }
 
+# Screens visited, newest first, as "type:puzzle:answer" for the Back button
+HISTORY=""
+
+remember() {
+	HISTORY="$TIDX:$PIDX:$ANSWER $HISTORY"
+}
+
+go_back() {   # return to the previous screen; fails if there isn't one
+	[ -n "$HISTORY" ] || return 1
+	set -- $HISTORY
+	state=$1
+	shift
+	HISTORY="$*"
+	t=${state%%:*} rest=${state#*:}
+	[ "$t" = "$TIDX" ] || { TIDX=$t; load_type; }
+	PIDX=${rest%%:*} ANSWER=${rest#*:}
+}
+
 daily_refresh() {   # download new puzzles and show today's
 	update_puzzles
+	HISTORY=""   # the puzzle list may have changed
 	load_types
 	[ "$TIDX" -gt "$NTYPES" ] && TIDX=1
 	[ "$NTYPES" -gt 0 ] && { load_type; render; }
@@ -481,16 +501,18 @@ viewer() {
 		LAST_ACTIVE=$now
 		if is_key "$KEY" "$KEYS_EXIT"; then
 			break
+		elif is_key "$KEY" "$KEYS_BACK"; then
+			go_back && render
 		elif is_key "$KEY" "$KEYS_NEXT"; then
-			[ "$PIDX" -lt "$NPUZ" ] && { PIDX=$((PIDX + 1)); ANSWER=0; render; }
+			[ "$PIDX" -lt "$NPUZ" ] && { remember; PIDX=$((PIDX + 1)); ANSWER=0; render; }
 		elif is_key "$KEY" "$KEYS_PREV"; then
-			[ "$PIDX" -gt 1 ] && { PIDX=$((PIDX - 1)); ANSWER=0; render; }
+			[ "$PIDX" -gt 1 ] && { remember; PIDX=$((PIDX - 1)); ANSWER=0; render; }
 		elif is_key "$KEY" "$KEYS_TYPE_NEXT"; then
-			TIDX=$((TIDX % NTYPES + 1)); load_type; render
+			remember; TIDX=$((TIDX % NTYPES + 1)); load_type; render
 		elif is_key "$KEY" "$KEYS_TYPE_PREV"; then
-			TIDX=$(((TIDX + NTYPES - 2) % NTYPES + 1)); load_type; render
+			remember; TIDX=$(((TIDX + NTYPES - 2) % NTYPES + 1)); load_type; render
 		elif is_key "$KEY" "$KEYS_ANSWER"; then
-			ANSWER=$((1 - ANSWER)); render
+			remember; ANSWER=$((1 - ANSWER)); render
 		fi
 	done
 }

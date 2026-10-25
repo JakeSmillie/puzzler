@@ -89,11 +89,12 @@ suspending doesn't work, the viewer logs it and stays awake.
 | 5-way down / up                 | Next / previous puzzle type  |
 | 5-way centre                    | Show / hide the answer       |
 | Power (while asleep)            | Wake up                      |
-| Back / Home                     | Exit Puzzler                 |
+| Back                            | Previous screen              |
+| Home                            | Exit Puzzler                 |
 
 The viewer opens on today's puzzle. You can go back through earlier puzzles but
 not ahead to future ones. The Kindle's own UI is paused while Puzzler is
-running; exit with Back, and it restarts (this takes about 30 seconds).
+running; exit with Home, and it restarts (this takes about 30 seconds).
 
 If a button does nothing, run **Puzzler → Button test** from KUAL to see the key
 codes your Kindle sends, then edit the `KEYS_*` lines at the top of
