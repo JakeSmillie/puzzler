@@ -106,15 +106,31 @@ folder, the one containing `index.txt`. The Kindle downloads new or changed
 files and deletes ones that are no longer listed. Use **Puzzler → Download
 puzzles now** to download straight away.
 
-**HTTPS caveat:** the Kindle 4's built-in `curl` is too old to connect to
-modern HTTPS sites, including `*.github.io`. Ways around it:
+### HTTPS (GitHub Pages)
+
+The Kindle 4's built-in `curl` only speaks TLS 1.0. HTTPS sites such as
+`*.github.io` refuse it, and the log shows `tlsv1 alert protocol version`. To
+fix it, put a modern static `curl` and a certificate bundle in the extension's
+`bin` folder. When they're there, Puzzler uses them instead of the built-in
+`curl`. Download them on your PC (PowerShell, from the repo root):
+
+```powershell
+$bin = "clients\kindle4\extension\puzzler\bin"
+Invoke-WebRequest https://github.com/moparisthebest/static-curl/releases/latest/download/curl-armhf -OutFile "$bin\curl"
+Invoke-WebRequest https://curl.se/ca/cacert.pem -OutFile "$bin\cacert.pem"
+```
+
+Then copy both files to the Kindle's `extensions/puzzler/bin/`. Set
+`BASE_URL="https://<user>.github.io/puzzler/kindle4"` and run **Download puzzles
+now**. They aren't committed to git (see `.gitignore`).
+
+If that doesn't work, for example because the Kindle's old kernel can't run
+the binary, the alternatives are:
 
 - Point a custom domain at GitHub Pages (Settings → Pages → Custom domain) and
   leave **Enforce HTTPS** unticked. Then
-  `BASE_URL="http://puzzles.yourdomain.com/kindle4"` works.
+  `BASE_URL="http://puzzles.yourdomain.com/kindle4"` works with the built-in `curl`.
 - Copy the published files to any host that still serves plain `http://`.
-- Install a newer static `curl` build on the Kindle. The script uses whichever
-  `curl` comes first on `PATH`.
 
 ## Sleep and daily wake-up
 

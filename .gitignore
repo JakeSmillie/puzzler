@@ -225,3 +225,5 @@ clients/kindle4/extension/puzzler/puzzles/
 clients/kindle4/extension/puzzler/puzzler.log*
 clients/kindle4/extension/puzzler/diagnostics.txt
 site/
+clients/kindle4/extension/puzzler/bin/curl
+clients/kindle4/extension/puzzler/bin/cacert.pem

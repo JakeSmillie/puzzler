@@ -216,7 +216,14 @@ go_to_sleep() {
 # --- downloading --------------------------------------------------------------
 
 fetch() {   # fetch <url> <file>
-	if have curl; then
+	# The built-in curl only speaks TLS 1.0, which modern HTTPS sites refuse.
+	# A newer static curl in bin/ (with a CA bundle beside it) is used if present.
+	if [ -f "$EXT_DIR/bin/curl" ]; then
+		if [ ! -x "$TMP/curl" ]; then   # copy off the FAT partition so it's executable
+			cp "$EXT_DIR/bin/curl" "$TMP/curl" && chmod +x "$TMP/curl"
+		fi
+		"$TMP/curl" -fsSL --cacert "$EXT_DIR/bin/cacert.pem" --connect-timeout 20 --max-time 120 -o "$2" "$1"
+	elif have curl; then
 		curl -fsSL --connect-timeout 20 --max-time 120 -o "$2" "$1"
 	else
 		wget -q -O "$2" "$1"
