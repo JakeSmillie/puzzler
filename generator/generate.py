@@ -1,10 +1,11 @@
-"""Pre-compute daily puzzle PNGs for the Kindle Puzzler extension.
+"""Pre-compute daily puzzles for every client display profile.
 
-Writes  <out>/<NN>_<type>/<YYYY-MM-DD>.png  and  <YYYY-MM-DD>_answer.png,
-plus <out>/index.txt listing every PNG, which the Kindle uses to download them.
+Writes, for each profile (see docs/protocol.md):
+    <out>/<profile>/<NN>_<type>/<YYYY-MM-DD>.png  and  <YYYY-MM-DD>_answer.png
+    <out>/<profile>/index.txt   listing every PNG, which clients use to download them
 Each puzzle is seeded from its type and date, so reruns are reproducible.
 
-    python generator/generate.py --days 60
+    python generator/generate.py --past 7 --days 30
 """
 
 import argparse
@@ -14,50 +15,69 @@ import random
 from pathlib import Path
 
 from puzzlegen import REGISTRY
+from puzzlegen.render.profiles import PROFILES
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OUT = ROOT / "kindle" / "extensions" / "puzzler" / "puzzles"
+DEFAULT_OUT = ROOT / "site"
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--start", type=dt.date.fromisoformat, default=dt.date.today(),
                         help="first date, YYYY-MM-DD (default: today)")
-    parser.add_argument("--days", type=int, default=30, help="number of days to generate (default: 30)")
+    parser.add_argument("--days", type=int, default=30,
+                        help="number of days to generate from --start onwards (default: 30)")
+    parser.add_argument("--past", type=int, default=0,
+                        help="also generate this many days before --start (default: 0)")
     parser.add_argument("--types", default=",".join(REGISTRY),
                         help=f"comma-separated puzzle types (default: {','.join(REGISTRY)})")
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output folder")
+    parser.add_argument("--profiles", default=",".join(PROFILES),
+                        help=f"comma-separated display profiles (default: {','.join(PROFILES)})")
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output folder (default: site/)")
     parser.add_argument("--force", action="store_true", help="overwrite puzzles that already exist")
-    for module in REGISTRY.values():
+    for module, _ in REGISTRY.values():
         module.Generator.add_arguments(parser)
     args = parser.parse_args()
 
-    selected = [t.strip() for t in args.types.split(",") if t.strip()]
-    unknown = set(selected) - set(REGISTRY)
-    if unknown:
-        parser.error(f"unknown puzzle type(s): {', '.join(sorted(unknown))}")
+    types = _pick(parser, args.types, REGISTRY, "puzzle type")
+    profiles = [PROFILES[p] for p in _pick(parser, args.profiles, PROFILES, "profile")]
 
-    for order, (name, module) in enumerate(REGISTRY.items(), 1):
-        if name not in selected:
+    for order, (name, (module, renderer)) in enumerate(REGISTRY.items(), 1):
+        if name not in types:
             continue
         generator = module.Generator(args)
-        folder = args.out / f"{order:02d}_{name}"
-        folder.mkdir(parents=True, exist_ok=True)
-        for offset in range(args.days):
+        for offset in range(-args.past, args.days):
             day = args.start + dt.timedelta(days=offset)
-            puzzle_path, answer_path = folder / f"{day}.png", folder / f"{day}_answer.png"
-            if puzzle_path.exists() and answer_path.exists() and not args.force:
+            todo = []
+            for profile in profiles:
+                folder = args.out / profile.name / f"{order:02d}_{name}"
+                paths = folder / f"{day}.png", folder / f"{day}_answer.png"
+                if args.force or not all(p.exists() for p in paths):
+                    todo.append((profile, paths))
+            if not todo:
                 continue
-            puzzle, answer = generator.generate(random.Random(f"{name}:{day}"), day)
-            # eips wants 8-bit grayscale PNGs with no alpha channel
-            puzzle.convert("L").save(puzzle_path, optimize=True)
-            answer.convert("L").save(answer_path, optimize=True)
+            puzzle = generator.generate(random.Random(f"{name}:{day}"), day)
+            for profile, paths in todo:
+                paths[0].parent.mkdir(parents=True, exist_ok=True)
+                for image, path in zip(renderer.render(puzzle, day, profile), paths):
+                    profile.save(image, path)
             print(f"{module.TITLE}: {day}")
-    write_index(args.out)
+
+    for profile in profiles:
+        write_index(args.out / profile.name)
+
+
+def _pick(parser, value, known, label):
+    chosen = [v.strip() for v in value.split(",") if v.strip()]
+    unknown = set(chosen) - set(known)
+    if unknown:
+        parser.error(f"unknown {label}(s): {', '.join(sorted(unknown))}")
+    return chosen
 
 
 def write_index(out):
-    """List every puzzle as "<hash> <type>/<file>.png" so the Kindle can fetch new and changed files."""
+    """List every puzzle as "<hash> <type>/<file>.png" so clients can fetch new and changed files."""
+    out.mkdir(parents=True, exist_ok=True)
     lines = [f"{hashlib.sha1(path.read_bytes()).hexdigest()[:12]} {path.relative_to(out).as_posix()}"
              for path in sorted(out.glob("*/*.png"))]
     with open(out / "index.txt", "w", newline="") as fh:

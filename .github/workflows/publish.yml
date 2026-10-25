@@ -39,8 +39,7 @@ jobs:
       - name: Generate puzzles
         run: |
           python generator/generate.py --out site \
-            --start "$(date -u -d "-$PAST_DAYS days" +%F)" \
-            --days $((PAST_DAYS + 1 + FUTURE_DAYS))
+            --start "$(date -u +%F)" --past $PAST_DAYS --days $((1 + FUTURE_DAYS))
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

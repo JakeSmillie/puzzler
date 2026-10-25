@@ -1,19 +1,22 @@
 """Puzzle type registry.
 
-Each puzzle module exposes NAME, TITLE and a ``Generator`` class with:
+Each puzzle type is two modules:
 
-    Generator.add_arguments(parser)   # optional CLI options (classmethod/staticmethod)
-    Generator(args)                   # one-off setup (load word lists, etc.)
-    generator.generate(rng, day)      # -> (puzzle_image, answer_image)
+    puzzles/<type>.py   NAME, TITLE and a Generator class:
+                          Generator.add_arguments(parser)   optional CLI options
+                          Generator(args)                   one-off setup (load word lists, etc.)
+                          generator.generate(rng, day)      -> puzzle data, no drawing
+    render/<type>.py    render(puzzle, day, profile)        -> (puzzle_image, answer_image)
 
-To add a new puzzle type, create a module here and append it to REGISTRY.
-The position in REGISTRY sets the order puzzle types appear on the Kindle,
-so append new types rather than inserting them.
+To add a type, write both modules and append them to REGISTRY. The position in
+REGISTRY sets the order types appear on clients, so append new types rather
+than inserting them.
 """
 
-from . import bridge, wordwheel
+from .puzzles import bridge, wordwheel
+from .render import bridge as bridge_render, wordwheel as wordwheel_render
 
 REGISTRY = {
-    wordwheel.NAME: wordwheel,
-    bridge.NAME: bridge,
+    wordwheel.NAME: (wordwheel, wordwheel_render),
+    bridge.NAME: (bridge, bridge_render),
 }

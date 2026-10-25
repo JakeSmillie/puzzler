@@ -221,6 +221,7 @@ __marimo__/
 
 # Puzzler
 generator/data/words.txt
-kindle/extensions/puzzler/puzzles/
-kindle/extensions/puzzler/puzzler.log*
+clients/kindle4/extension/puzzler/puzzles/
+clients/kindle4/extension/puzzler/puzzler.log*
+clients/kindle4/extension/puzzler/diagnostics.txt
 site/

@@ -6,24 +6,35 @@ solver plays every line, and only deals with a single winning opening lead are
 kept, so there is always a trick to find.
 """
 
-from .common import BLACK, DARK, MARGIN, WIDTH, font, footer, header, new_page
+from dataclasses import dataclass
 
 NAME = "bridge"
 TITLE = "Bridge"
-RULES = ("Double dummy: every hand is visible and everyone plays perfectly. Follow suit if you can. "
-         "The highest trump wins the trick, otherwise the highest card of the suit led.")
 
 SUITS = "♠♥♦♣"
 SUIT_NAMES = ("spades", "hearts", "diamonds", "clubs")
 RANKS = "23456789TJQKA"
 PLAYERS = "NESW"
-PLAYER_NAMES = ("North", "East", "South", "West")
 SOUTH = 2
+
+
+def rank_text(rank):
+    return "10" if RANKS[rank] == "T" else RANKS[rank]
 
 
 def card_text(card):
     suit, rank = divmod(card, 13)
-    return SUITS[suit] + ("10" if RANKS[rank] == "T" else RANKS[rank])
+    return SUITS[suit] + rank_text(rank)
+
+
+@dataclass
+class Deal:
+    hands: list      # 52-bit card masks for N, E, S, W; card = suit * 13 + rank
+    trump: object    # suit index, or None for no trumps
+    cards: int       # cards in each hand
+    best: int        # tricks North-South take with the winning lead
+    others: int      # most tricks any other lead takes
+    line: list       # one optimal play: [(leader, cards in play order, winner), ...]
 
 
 class Generator:
@@ -50,71 +61,8 @@ class Generator:
             if len(winners) != 1 or best < self.cards - 1:
                 continue
             others = max(v for v in leads.values() if v != best)
-            line = solver.line(hands, SOUTH)
-            return (self._puzzle(day, hands, trump),
-                    self._answer(day, hands, trump, best, others, line))
+            return Deal(hands, trump, self.cards, best, others, solver.line(hands, SOUTH))
         raise RuntimeError("could not find an interesting bridge deal")
-
-    def _contract(self, trump):
-        return "No trumps" if trump is None else f"Trumps: {SUIT_NAMES[trump]} {SUITS[trump]}"
-
-    def _deal(self, draw, hands, top, size=26):
-        f, line_h = font(size), int(size * 1.25)
-        block_w = 170
-        spots = {0: ((WIDTH - block_w) // 2, top),
-                 3: (MARGIN + 10, top + 4 * line_h + 20),
-                 1: (WIDTH - MARGIN - block_w + 10, top + 4 * line_h + 20),
-                 2: ((WIDTH - block_w) // 2, top + 8 * line_h + 40)}
-        for player, (x, y) in spots.items():
-            for suit in range(4):
-                ranks = [r for r in range(12, -1, -1) if hands[player] >> (suit * 13 + r) & 1]
-                text = " ".join("10" if RANKS[r] == "T" else RANKS[r] for r in ranks) or "–"
-                draw.text((x, y + suit * line_h), f"{SUITS[suit]}  {text}", font=f, fill=BLACK)
-        # compass in the middle
-        cx, cy, half = WIDTH // 2, top + 6 * line_h + 20, 55
-        draw.rectangle((cx - half, cy - half, cx + half, cy + half), outline=BLACK, width=3)
-        lf = font(24, True)
-        for label, (dx, dy) in zip("NESW", ((0, -1), (1, 0), (0, 1), (-1, 0))):
-            draw.text((cx + dx * (half - 18), cy + dy * (half - 18)), label, font=lf, fill=BLACK, anchor="mm")
-        return top + 12 * line_h + 40
-
-    def _puzzle(self, day, hands, trump):
-        img, draw = new_page()
-        top = header(draw, TITLE, day)
-        draw.text((WIDTH // 2, top + 30), self._contract(trump), font=font(26, True), fill=BLACK, anchor="ms")
-        bottom = self._deal(draw, hands, top + 48)
-        draw.text((WIDTH // 2, bottom + 30), "South to lead.", font=font(26, True), fill=BLACK, anchor="ms")
-        draw.text((WIDTH // 2, bottom + 66), "How many tricks can North-South take?",
-                  font=font(24), fill=BLACK, anchor="ms")
-        footer(draw, RULES)
-        return img
-
-    def _answer(self, day, hands, trump, best, others, line):
-        img, draw = new_page()
-        top = header(draw, f"{TITLE} answer", day)
-        draw.text((WIDTH // 2, top + 46), f"North-South take {best} of {self.cards}",
-                  font=font(36, True), fill=BLACK, anchor="ms")
-        draw.text((WIDTH // 2, top + 82), f"{self._contract(trump)}.  Lead {card_text(line[0][1][0])}: "
-                  f"any other lead takes at most {others}.", font=font(19), fill=BLACK, anchor="ms")
-
-        cols = {"#": 50, "Lead": 110, "W": 210, "N": 300, "E": 390, "S": 480}
-        y = top + 130
-        hf, f, bf = font(22, True), font(26), font(26, True)
-        for label, x in cols.items():
-            draw.text((x, y), label, font=hf, fill=DARK, anchor="ms")
-        draw.line((MARGIN, y + 10, WIDTH - MARGIN, y + 10), fill=DARK, width=1)
-        for i, (leader, cards, winner) in enumerate(line, 1):
-            y += 44
-            draw.text((cols["#"], y), str(i), font=f, fill=BLACK, anchor="ms")
-            draw.text((cols["Lead"], y), PLAYERS[leader], font=f, fill=BLACK, anchor="ms")
-            for k, card in enumerate(cards):
-                player = PLAYERS[(leader + k) % 4]
-                draw.text((cols[player], y), card_text(card), font=bf if (leader + k) % 4 == winner else f,
-                          fill=BLACK, anchor="ms")
-            draw.text((WIDTH - MARGIN, y), "NS" if winner % 2 == 0 else "EW", font=font(20), fill=DARK, anchor="rs")
-        draw.text((WIDTH // 2, y + 50), "Winning card of each trick in bold.", font=font(19), fill=DARK, anchor="ms")
-        footer(draw)
-        return img
 
 
 class Solver:
