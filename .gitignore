@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Puzzler
+generator/data/words.txt
+kindle/extensions/puzzler/puzzles/
+kindle/extensions/puzzler/puzzler.log*
+site/

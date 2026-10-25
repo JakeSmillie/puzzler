@@ -1,0 +1,44 @@
+{
+	"items": [
+		{
+			"name": "Puzzler",
+			"priority": 0,
+			"items": [
+				{
+					"name": "Today's puzzles",
+					"priority": 1,
+					"action": "/bin/sh ./bin/puzzler.sh",
+					"exitmenu": true
+				},
+				{
+					"name": "Download puzzles now",
+					"priority": 2,
+					"action": "/bin/sh ./bin/puzzler.sh",
+					"params": "update",
+					"exitmenu": true
+				},
+				{
+					"name": "Sleep test (wakes in 2 minutes)",
+					"priority": 4,
+					"action": "/bin/sh ./bin/puzzler.sh",
+					"params": "sleeptest",
+					"exitmenu": true
+				},
+				{
+					"name": "Diagnostics (save to diagnostics.txt)",
+					"priority": 5,
+					"action": "/bin/sh ./bin/puzzler.sh",
+					"params": "diagnose",
+					"exitmenu": true
+				},
+				{
+					"name": "Button test (show key codes)",
+					"priority": 3,
+					"action": "/bin/sh ./bin/puzzler.sh",
+					"params": "keytest",
+					"exitmenu": true
+				}
+			]
+		}
+	]
+}
