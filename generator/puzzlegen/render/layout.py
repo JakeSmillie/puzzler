@@ -2,11 +2,14 @@
 
 import math
 from functools import lru_cache
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 MARGIN = 30
 BLACK, DARK, LIGHT, WHITE = 0, 90, 200, 255
+LOGO = Path(__file__).resolve().parents[3] / "branding" / "logo.png"
+LOGO_SIZE = 46
 
 _FONTS = {
     False: ["DejaVuSans.ttf", "arial.ttf", "Arial.ttf", "LiberationSans-Regular.ttf",
@@ -26,6 +29,17 @@ def font(size, bold=False):
     return ImageFont.load_default(size)
 
 
+@lru_cache(maxsize=None)
+def logo(size):
+    """The logo flattened onto white (e-ink images have no alpha), or None if it's missing."""
+    if not LOGO.exists():
+        return None
+    image = Image.open(LOGO).convert("RGBA")
+    flat = Image.new("RGBA", image.size, "white")
+    flat.alpha_composite(image)
+    return flat.convert("L").resize((size, size), Image.LANCZOS)
+
+
 class Page:
     """A blank screen for one display profile."""
 
@@ -38,12 +52,17 @@ class Page:
     def header(self, title, day):
         """Draw the title bar and return the y coordinate below it."""
         draw = self.draw
+        left = MARGIN
+        mark = logo(LOGO_SIZE)
+        if mark:
+            self.image.paste(mark, (left - 4, 70 - LOGO_SIZE))
+            left += LOGO_SIZE + 6
         date_text = day.strftime("%a %d %b %Y")
-        room = self.width - 2 * MARGIN - draw.textlength(date_text, font=font(22)) - 16
+        room = self.width - left - MARGIN - draw.textlength(date_text, font=font(22)) - 16
         size = 38
         while size > 20 and draw.textlength(title, font=font(size, True)) > room:
             size -= 1
-        draw.text((MARGIN, 62), title, font=font(size, True), fill=BLACK, anchor="ls")
+        draw.text((left, 62), title, font=font(size, True), fill=BLACK, anchor="ls")
         draw.text((self.width - MARGIN, 62), date_text, font=font(22), fill=BLACK, anchor="rs")
         draw.line((MARGIN, 78, self.width - MARGIN, 78), fill=BLACK, width=3)
         return 90
