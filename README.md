@@ -28,6 +28,11 @@ docs/         protocol.md: the site layout clients rely on
   take? A built-in solver plays out every line. Only deals with exactly one
   winning opening lead are kept, and the answer page shows the full line of
   play.
+- **Sudoku**, as two separate types: easy and medium. Every puzzle has
+  exactly one solution and a symmetric clue pattern. Each is graded by the
+  hardest technique it needs:
+  - **Easy:** 36 clues, solvable with singles alone.
+  - **Medium:** needs pointing/claiming or naked/hidden pairs, but nothing harder.
 
 ## Quick start
 

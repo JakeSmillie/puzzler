@@ -28,7 +28,7 @@ Useful options:
 | `--start YYYY-MM-DD` | First day (default: today) |
 | `--days N` | Days from `--start` onwards, including `--start` (default: 30) |
 | `--past N` | Also generate N days before `--start` (default: 0) |
-| `--types wordwheel,bridge` | Only these puzzle types |
+| `--types wordwheel,bridge,sudoku_easy` | Only these puzzle types (also `sudoku_medium`) |
 | `--profiles kindle4` | Only these display profiles |
 | `--out DIR` | Output folder (default: `site/`) |
 | `--force` | Regenerate files that already exist |
@@ -98,6 +98,11 @@ tools/fetch_wordlist.py  downloads the word list
    returning `(puzzle_image, answer_image)`. Use `layout.Page` for the shared
    header and footer.
 3. Append both to `REGISTRY` in `puzzlegen/__init__.py`.
+
+One module can provide several types. `puzzles/sudoku.py` registers
+`sudoku_easy` and `sudoku_medium` from a list of `VARIANTS`, each
+with its own `NAME`, `TITLE` and `Generator`. Each variant gets its own folder on
+the site, so clients show them as separate puzzle types.
 
 Clients need no changes, because every type folder on the site is treated as a
 puzzle type.

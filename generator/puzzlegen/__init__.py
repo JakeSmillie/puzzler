@@ -13,10 +13,12 @@ REGISTRY sets the order types appear on clients, so append new types rather
 than inserting them.
 """
 
-from .puzzles import bridge, wordwheel
-from .render import bridge as bridge_render, wordwheel as wordwheel_render
+from .puzzles import bridge, sudoku, wordwheel
+from .render import bridge as bridge_render, sudoku as sudoku_render, wordwheel as wordwheel_render
 
 REGISTRY = {
     wordwheel.NAME: (wordwheel, wordwheel_render),
     bridge.NAME: (bridge, bridge_render),
+    # one module can register several types, e.g. a type per difficulty
+    **{variant.NAME: (variant, sudoku_render) for variant in sudoku.VARIANTS},
 }

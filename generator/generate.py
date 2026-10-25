@@ -35,8 +35,9 @@ def main():
                         help=f"comma-separated display profiles (default: {','.join(PROFILES)})")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output folder (default: site/)")
     parser.add_argument("--force", action="store_true", help="overwrite puzzles that already exist")
-    for module, _ in REGISTRY.values():
-        module.Generator.add_arguments(parser)
+    # Types that share a module (e.g. the sudoku levels) share their options, so add each set once
+    for add_arguments in dict.fromkeys(module.Generator.add_arguments for module, _ in REGISTRY.values()):
+        add_arguments(parser)
     args = parser.parse_args()
 
     types = _pick(parser, args.types, REGISTRY, "puzzle type")
