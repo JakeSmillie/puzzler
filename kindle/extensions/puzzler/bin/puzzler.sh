@@ -184,6 +184,9 @@ clear_alarm() {
 }
 
 suspend_now() {   # blocks until the device wakes; fails if the kernel won't suspend
+	# eips returns before the e-ink refresh finishes; suspending mid-refresh
+	# freezes the screen half-drawn (inverted)
+	sleep 5
 	sync
 	echo mem 2>/dev/null >/sys/power/state
 }
@@ -202,6 +205,7 @@ go_to_sleep() {
 		LAST_ACTIVE=$(date +%s)
 		if [ "$LAST_ACTIVE" -lt $((NEXT_SYNC - 120)) ]; then
 			log "woken early (power button)"
+			render   # clean redraw in case the screen was left half-refreshed
 			return
 		fi
 		log "timed wake"
@@ -356,7 +360,7 @@ daily_refresh() {   # download new puzzles and show today's
 	HISTORY=""   # the puzzle list may have changed
 	load_types
 	[ "$TIDX" -gt "$NTYPES" ] && TIDX=1
-	[ "$NTYPES" -gt 0 ] && { load_type; render; }
+	[ "$NTYPES" -gt 0 ] && { load_type; render; log "showing $TYPE $ID"; }
 	next_sync_time
 }
 
